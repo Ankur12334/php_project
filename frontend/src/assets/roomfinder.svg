@@ -1,0 +1,27 @@
+<svg width="240" height="44" viewBox="0 0 240 44" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="rfTitle rfDesc">
+  <title id="rfTitle">RoomFinder Logo</title>
+  <desc id="rfDesc">A modern house pin icon with gradient RoomFinder wordmark.</desc>
+
+  <defs>
+    <linearGradient id="rfIcon" x1="2" y1="2" x2="42" y2="42" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2563EB"/>
+      <stop offset="1" stop-color="#06B6D4"/>
+    </linearGradient>
+    <linearGradient id="rfText" x1="58" y1="8" x2="228" y2="34" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1D4ED8"/>
+      <stop offset="1" stop-color="#0891B2"/>
+    </linearGradient>
+    <filter id="rfShadow" x="0" y="0" width="46" height="46" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="4" stdDeviation="3" flood-color="#1E3A8A" flood-opacity="0.24"/>
+    </filter>
+  </defs>
+
+  <g filter="url(#rfShadow)">
+    <path d="M22 3.5L6 15.7V27.3C6 33.3 10.8 38 16.8 38H27.2C33.2 38 38 33.3 38 27.3V15.7L22 3.5Z" fill="url(#rfIcon)"/>
+    <path d="M22 9L12 16.8V26.8C12 30.2 14.8 33 18.2 33H25.8C29.2 33 32 30.2 32 26.8V16.8L22 9Z" fill="white" fill-opacity="0.95"/>
+    <path d="M22 20C19.9 20 18.2 21.7 18.2 23.8C18.2 26.8 22 30.4 22 30.4C22 30.4 25.8 26.8 25.8 23.8C25.8 21.7 24.1 20 22 20Z" fill="url(#rfIcon)"/>
+    <circle cx="22" cy="23.7" r="1.2" fill="white"/>
+  </g>
+
+  <text x="52" y="29" fill="url(#rfText)" font-family="Poppins, Segoe UI, Arial, sans-serif" font-size="28" font-weight="700" letter-spacing="0.2">RoomFinder</text>
+</svg>

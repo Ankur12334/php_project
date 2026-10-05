@@ -1,0 +1,10 @@
+import api from './client';
+
+export const getRooms = (params) => api.get('/rooms', { params });
+export const getRoomById = (id) => api.get(`/rooms/${id}`);
+export const createRoom = (formData) => api.post('/rooms', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+export const updateRoom = (id, formData) => api.put(`/rooms/${id}`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+export const deleteRoom = (id) => api.delete(`/rooms/${id}`);
+export const getMyListings = () => api.get('/rooms/my/listings');
+export const getOwnerRooms = () => api.get('/rooms/my/listings');
+export const contactOwner = (id) => api.get(`/rooms/${id}/contact`);

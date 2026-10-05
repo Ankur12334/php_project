@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+
+# Build / generated files
+dist/
+coverage/
+
+# Environment variables / secrets
+.env
+.env.*
+!.env.example
+frontend/.env
+backend/.env
+
+# Uploaded files
+backend/uploads/rooms/*
+!backend/uploads/rooms/.gitkeep
+
+# Logs
+npm-debug.log*
+*.log
+
+# macOS
+.DS_Store
