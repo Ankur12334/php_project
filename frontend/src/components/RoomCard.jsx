@@ -1,5 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useMemo, useState } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { deleteRoom } from '../api/rooms';
 
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=500&h=400&fit=crop';
 
@@ -14,7 +16,9 @@ function toImageUrl(imagePath) {
   return `${origin}${imagePath}`;
 }
 
-export default function RoomCard({ room }) {
+export default function RoomCard({ room, onDelete }) {
+  const { user } = useAuth();
+  const [isDeleting, setIsDeleting] = useState(false);
   const initialImage = useMemo(() => toImageUrl(room.images?.[0]?.image_url), [room.images]);
   const [imageSrc, setImageSrc] = useState(initialImage);
 
@@ -30,9 +34,33 @@ export default function RoomCard({ room }) {
       })()
     : [];
 
+  const handleDelete = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (isDeleting) return;
+
+    const confirmed = window.confirm(
+      `Are you sure you want to delete room "${room.title}" (ID: #${room.id})? This will permanently delete the listing.`
+    );
+    if (!confirmed) return;
+
+    try {
+      setIsDeleting(true);
+      await deleteRoom(room.id);
+      if (onDelete) {
+        onDelete(room.id, `Room "${room.title}" was successfully deleted.`);
+      }
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to delete room');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return (
-    <Link to={`/rooms/${room.id}`}>
-      <article className="card-hover overflow-hidden group h-full">
+    <article className="card-hover overflow-hidden group h-full flex flex-col justify-between">
+      <Link to={`/rooms/${room.id}`} className="block">
         <div className="relative h-48 overflow-hidden bg-slate-200">
           <img
             src={imageSrc}
@@ -69,19 +97,34 @@ export default function RoomCard({ room }) {
           </div>
 
           <p className="text-sm text-slate-600 line-clamp-2 h-10 leading-5">{room.description}</p>
+        </div>
+      </Link>
 
-          <div className="flex items-center justify-between pt-2 border-t border-slate-100">
-            <div className="text-xs text-slate-500 flex items-center gap-1">
-              <i className="fas fa-images"></i>
-              {room.images?.length || 0} photos
-            </div>
-            <button className="btn-primary btn-sm flex items-center gap-1">
-              <i className="fas fa-arrow-right"></i>
-              View
-            </button>
+      <div className="p-4 pt-0">
+        <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+          <div className="text-xs text-slate-500 flex items-center gap-1">
+            <i className="fas fa-images"></i>
+            {room.images?.length || 0} photos
+          </div>
+          <div className="flex items-center gap-2">
+            <Link to={`/rooms/${room.id}`} className="btn-primary btn-sm flex items-center gap-1">
+              <i className="fas fa-eye"></i>
+              View Room
+            </Link>
+            {user?.role === 'admin' && (
+              <button
+                type="button"
+                className="btn-danger btn-sm flex items-center gap-1"
+                onClick={handleDelete}
+                disabled={isDeleting}
+              >
+                <i className={`fas ${isDeleting ? 'fa-spinner fa-spin' : 'fa-trash'}`}></i>
+                {isDeleting ? 'Deleting...' : 'Delete Room'}
+              </button>
+            )}
           </div>
         </div>
-      </article>
-    </Link>
+      </div>
+    </article>
   );
 }

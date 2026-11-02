@@ -24,7 +24,7 @@ Route::prefix('rooms')->group(function () {
 
     Route::post('/', [RoomController::class, 'store'])->middleware(['auth.jwt', 'role:user']);
     Route::put('/{id}', [RoomController::class, 'update'])->middleware(['auth.jwt', 'role:user']);
-    Route::delete('/{id}', [RoomController::class, 'destroy'])->middleware(['auth.jwt', 'role:user,admin']);
+    Route::delete('/{id}', [RoomController::class, 'destroy'])->middleware(['auth.jwt', 'role:admin']);
 });
 
 // Booking / Connect Routes
@@ -41,5 +41,6 @@ Route::prefix('admin')->middleware(['auth.jwt', 'role:admin'])->group(function (
     Route::put('/rooms/{id}/approve', [AdminController::class, 'approveRoom']);
     Route::put('/rooms/{id}/reject', [AdminController::class, 'rejectRoom']);
     Route::get('/users', [AdminController::class, 'allUsers']);
+    Route::delete('/users/{id}', [AdminController::class, 'deleteUser']);
     Route::get('/reports', [AdminController::class, 'reports']);
 });

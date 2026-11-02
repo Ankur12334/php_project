@@ -44,7 +44,9 @@ class AuthService
             throw new Exception('Google profile incomplete');
         }
 
-        $user = User::where('email', $email)->first();
+        $user = User::where('email', $email)
+            ->orWhere('google_id', $googleId)
+            ->first();
 
         if ($user) {
             if (!$user->google_id) {

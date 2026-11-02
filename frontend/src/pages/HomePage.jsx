@@ -27,6 +27,7 @@ export default function HomePage() {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
 
   const buildQueryParams = (targetPage) => {
     const params = { page: targetPage, limit: 9 };
@@ -179,11 +180,23 @@ export default function HomePage() {
             </div>
           )}
 
+          {successMessage && (
+            <div className="mb-6 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm font-semibold text-emerald-700">
+              {successMessage}
+            </div>
+          )}
+
           {!loading && rooms.length > 0 && (
             <div className="mb-10 grid justify-items-center gap-6 md:grid-cols-2 xl:grid-cols-3">
               {rooms.map((room) => (
                 <div key={room.id} className="w-full max-w-md">
-                  <RoomCard room={room} />
+                  <RoomCard
+                    room={room}
+                    onDelete={(deletedId, msg) => {
+                      setRooms((prev) => prev.filter((r) => r.id !== deletedId));
+                      setSuccessMessage(msg);
+                    }}
+                  />
                 </div>
               ))}
             </div>

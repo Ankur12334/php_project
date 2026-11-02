@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\DB;
 use App\Models\Room;
 use App\Models\RoomImage;
 
@@ -164,19 +165,36 @@ class RoomController extends Controller
             if (!is_array($files)) {
                 $files = [$files];
             }
+            if (count($files) > 3) {
+                return response()->json([
+                    'message' => 'Validation failed',
+                    'errors' => ['Maximum 3 images allowed per room listing']
+                ], 400);
+            }
             $targetDir = public_path('uploads/rooms');
             if (!file_exists($targetDir)) {
                 mkdir($targetDir, 0755, true);
             }
 
-            foreach ($files as $file) {
-                $filename = time() . '-' . rand(100000000, 999999999) . '.' . $file->getClientOriginalExtension();
-                $file->move($targetDir, $filename);
+            $uploadedFiles = [];
+            try {
+                foreach ($files as $file) {
+                    $filename = time() . '-' . rand(100000000, 999999999) . '.' . $file->getClientOriginalExtension();
+                    $file->move($targetDir, $filename);
+                    $uploadedFiles[] = "{$targetDir}/{$filename}";
 
-                RoomImage::create([
-                    'room_id' => $room->id,
-                    'image_url' => "/uploads/rooms/{$filename}"
-                ]);
+                    RoomImage::create([
+                        'room_id' => $room->id,
+                        'image_url' => "/uploads/rooms/{$filename}"
+                    ]);
+                }
+            } catch (\Exception $e) {
+                foreach ($uploadedFiles as $path) {
+                    if (file_exists($path)) {
+                        @unlink($path);
+                    }
+                }
+                throw $e;
             }
         }
 
@@ -234,19 +252,37 @@ class RoomController extends Controller
             if (!is_array($files)) {
                 $files = [$files];
             }
+            $existingCount = RoomImage::where('room_id', $room->id)->count();
+            if (($existingCount + count($files)) > 3) {
+                return response()->json([
+                    'message' => 'Validation failed',
+                    'errors' => ['Maximum 3 images allowed per room listing. This listing already has ' . $existingCount . ' image(s).']
+                ], 400);
+            }
             $targetDir = public_path('uploads/rooms');
             if (!file_exists($targetDir)) {
                 mkdir($targetDir, 0755, true);
             }
 
-            foreach ($files as $file) {
-                $filename = time() . '-' . rand(100000000, 999999999) . '.' . $file->getClientOriginalExtension();
-                $file->move($targetDir, $filename);
+            $uploadedFiles = [];
+            try {
+                foreach ($files as $file) {
+                    $filename = time() . '-' . rand(100000000, 999999999) . '.' . $file->getClientOriginalExtension();
+                    $file->move($targetDir, $filename);
+                    $uploadedFiles[] = "{$targetDir}/{$filename}";
 
-                RoomImage::create([
-                    'room_id' => $room->id,
-                    'image_url' => "/uploads/rooms/{$filename}"
-                ]);
+                    RoomImage::create([
+                        'room_id' => $room->id,
+                        'image_url' => "/uploads/rooms/{$filename}"
+                    ]);
+                }
+            } catch (\Exception $e) {
+                foreach ($uploadedFiles as $path) {
+                    if (file_exists($path)) {
+                        @unlink($path);
+                    }
+                }
+                throw $e;
             }
         }
 
@@ -256,17 +292,31 @@ class RoomController extends Controller
 
     public function destroy(Request $request, $id)
     {
-        $room = Room::find($id);
+        $user = $request->user();
+        if (!$user || $user->role !== 'admin') {
+            return response()->json(['message' => 'Forbidden: Administrator privileges required'], 403);
+        }
+
+        $room = Room::with('images')->find($id);
         if (!$room) {
             return response()->json(['message' => 'Room not found'], 404);
         }
 
-        $user = $request->user();
-        if ($room->owner_id !== $user->id && $user->role !== 'admin') {
-            return response()->json(['message' => 'Forbidden'], 403);
-        }
+        DB::transaction(function () use ($room) {
+            foreach ($room->images as $image) {
+                if ($image->image_url) {
+                    $localPath = public_path(ltrim($image->image_url, '/'));
+                    if (file_exists($localPath) && is_file($localPath)) {
+                        @unlink($localPath);
+                    }
+                }
+            }
 
-        $room->delete();
+            $room->images()->delete();
+            $room->bookings()->delete();
+            $room->delete();
+        });
+
         return response()->json(['message' => 'Room deleted successfully']);
     }
 

@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   approveRoom,
+  deleteUser,
   getAdminDashboard,
   getPendingRooms,
   getReports,
   getUsers,
   rejectRoom
 } from '../../api/admin';
+import { useAuth } from '../../context/AuthContext';
 
 function fmtDate(value) {
   if (!value) return '-';
@@ -42,6 +44,7 @@ function ChartBlock({ title, rows, color }) {
 }
 
 export default function AdminDashboardPage() {
+  const { user: currentAdmin } = useAuth();
   const [stats, setStats] = useState(null);
   const [users, setUsers] = useState([]);
   const [reports, setReports] = useState(null);
@@ -52,6 +55,9 @@ export default function AdminDashboardPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [actionKey, setActionKey] = useState('');
   const [userQuery, setUserQuery] = useState('');
+  const [deletingUserId, setDeletingUserId] = useState(null);
+  const [userActionSuccess, setUserActionSuccess] = useState('');
+  const [userActionError, setUserActionError] = useState('');
 
   const load = async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
@@ -94,6 +100,30 @@ export default function AdminDashboardPage() {
       setError(err.response?.data?.message || 'Room status update failed');
     } finally {
       setActionKey('');
+    }
+  };
+
+  const onDeleteUser = async (targetUser) => {
+    setUserActionSuccess('');
+    setUserActionError('');
+
+    if (deletingUserId !== null) return;
+
+    const confirmed = window.confirm(
+      `Are you sure you want to permanently delete user "${targetUser.name}" (${targetUser.email || targetUser.phone || `ID: #${targetUser.id}`})?\n\nWarning: This will permanently delete the user's account and all associated authentication data from the database. This action cannot be undone.`
+    );
+    if (!confirmed) return;
+
+    try {
+      setDeletingUserId(targetUser.id);
+      await deleteUser(targetUser.id);
+      setUsers((prev) => prev.filter((u) => u.id !== targetUser.id));
+      setUserActionSuccess(`User "${targetUser.name}" was permanently deleted.`);
+      getAdminDashboard().then((res) => setStats(res.data)).catch(() => {});
+    } catch (err) {
+      setUserActionError(err.response?.data?.message || 'Failed to delete user account');
+    } finally {
+      setDeletingUserId(null);
     }
   };
 
@@ -281,6 +311,18 @@ export default function AdminDashboardPage() {
           />
         </div>
 
+        {userActionSuccess && (
+          <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-semibold text-emerald-700">
+            {userActionSuccess}
+          </div>
+        )}
+
+        {userActionError && (
+          <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm font-semibold text-rose-700">
+            {userActionError}
+          </div>
+        )}
+
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm">
             <thead>
@@ -291,6 +333,7 @@ export default function AdminDashboardPage() {
                 <th className="px-2 py-3">Role</th>
                 <th className="px-2 py-3">Verified</th>
                 <th className="px-2 py-3">Joined</th>
+                <th className="px-2 py-3 text-right">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -310,6 +353,22 @@ export default function AdminDashboardPage() {
                     </span>
                   </td>
                   <td className="px-2 py-3 text-slate-600">{fmtDate(u.created_at)}</td>
+                  <td className="px-2 py-3 text-right">
+                    {u.role === 'user' && Number(u.id) !== Number(currentAdmin?.id) ? (
+                      <button
+                        type="button"
+                        className="btn-danger btn-sm"
+                        disabled={deletingUserId !== null}
+                        onClick={() => onDeleteUser(u)}
+                      >
+                        {deletingUserId === u.id ? 'Deleting...' : 'Delete User'}
+                      </button>
+                    ) : (
+                      <span className="text-xs font-semibold text-slate-400">
+                        {u.id === currentAdmin?.id ? 'Current Admin' : 'Admin'}
+                      </span>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>

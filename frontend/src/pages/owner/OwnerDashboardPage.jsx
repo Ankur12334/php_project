@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { deleteRoom, getMyListings } from '../../api/rooms';
 import { getOwnerConnectRequests } from '../../api/bookings';
+import { useAuth } from '../../context/AuthContext';
 
 const statusClass = {
   approved: 'bg-emerald-50 text-emerald-700 border-emerald-200',
@@ -54,6 +55,7 @@ function ChartBlock({ title, rows, color }) {
 
 export default function OwnerDashboardPage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [rooms, setRooms] = useState([]);
   const [connectRequests, setConnectRequests] = useState([]);
   const [loadingRooms, setLoadingRooms] = useState(true);
@@ -363,7 +365,10 @@ export default function OwnerDashboardPage() {
                       </td>
                       <td className="px-6 py-4 text-slate-500">{room.created_at ? new Date(room.created_at).toLocaleDateString() : '-'}</td>
                       <td className="px-6 py-4 text-right">
-                        <button className="btn-danger btn-sm" onClick={() => onDelete(room.id)}>Delete</button>
+                        <Link to={`/rooms/${room.id}`} className="btn-secondary btn-sm mr-2">View</Link>
+                        {user?.role === 'admin' && (
+                          <button className="btn-danger btn-sm" onClick={() => onDelete(room.id)}>Delete</button>
+                        )}
                       </td>
                     </tr>
                   ))}

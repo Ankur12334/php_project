@@ -113,35 +113,6 @@ class AuthController extends Controller
             return response()->json(['message' => 'Invalid OTP'], 400);
         }
 
-        if ($registrationToken) {
-            try {
-                $regPayload = JwtService::verifyRegistrationToken($registrationToken);
-            } catch (Exception $err) {
-                return response()->json(['message' => 'Invalid registration token'], 400);
-            }
-
-            if (($regPayload['authType'] ?? null) !== 'google') {
-                return response()->json(['message' => 'OTP verification context is invalid'], 400);
-            }
-
-            $phoneVariants = $this->buildPhoneVariants($normalizedPhone);
-            $existingUser = User::whereIn('phone', $phoneVariants)->first();
-            if ($existingUser) {
-                return response()->json([
-                    'message' => 'Phone number is already registered. Please login with phone OTP.'
-                ], 409);
-            }
-
-            return response()->json([
-                'verified' => true,
-                'phone' => $normalizedPhone,
-                'phoneVerificationToken' => JwtService::signPhoneVerificationToken([
-                    'authType' => 'google',
-                    'google_id' => $regPayload['google_id'],
-                    'phone' => $normalizedPhone
-                ])
-            ]);
-        }
 
         $phoneVariants = $this->buildPhoneVariants($normalizedPhone);
         $user = User::whereIn('phone', $phoneVariants)->first();
@@ -217,22 +188,12 @@ class AuthController extends Controller
                 return response()->json(['message' => 'Phone number is required for Google registration'], 400);
             }
 
-            if (!$phoneVerificationToken) {
-                return response()->json(['message' => 'Please verify your phone number with OTP before registration'], 400);
-            }
-
-            try {
-                $verificationPayload = JwtService::verifyPhoneVerificationToken($phoneVerificationToken);
-            } catch (Exception $err) {
-                return response()->json(['message' => 'Phone verification expired. Please verify OTP again.'], 400);
-            }
-
-            if (
-                ($verificationPayload['authType'] ?? null) !== 'google' ||
-                ($verificationPayload['google_id'] ?? null) !== ($payload['google_id'] ?? null) ||
-                ($verificationPayload['phone'] ?? null) !== $normalizedPhone
-            ) {
-                return response()->json(['message' => 'Phone verification does not match registration details'], 400);
+            $phoneVariants = $this->buildPhoneVariants($normalizedPhone);
+            $existingPhone = User::whereIn('phone', $phoneVariants)->first();
+            if ($existingPhone) {
+                return response()->json([
+                    'message' => 'Phone number is already registered.'
+                ], 409);
             }
 
             $userData['google_id'] = $payload['google_id'];
